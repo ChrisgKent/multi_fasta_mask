@@ -1,0 +1,19 @@
+import pathlib
+
+configfile: "config/config.yaml"
+
+OUTPUT_DIR = pathlib.Path(config["output_dir"])
+INPUT_MFASTA = pathlib.Path(config["input"])
+
+rule all:
+    input:
+         OUTPUT_DIR/"NMasked_genome.fasta"
+
+rule mfasta_split:
+    input:
+        INPUT_MFASTA
+    output:
+        OUTPUT_DIR/
+    script:
+        "scripts/split_multifa.py"
+
