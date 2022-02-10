@@ -1,4 +1,6 @@
 import pathlib
+import os
+import re
 
 configfile: "config/config.yaml"
 
@@ -14,12 +16,22 @@ def aggregate_input(wildcards):
     return expand(OUTPUT_DIR/"vcf/{sequences}.vcf",
            sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
 
-def get_ref():
-    return [x for x in pathlib.Path(OUTPUT_DIR/"individual_seqs/referance").iterdir()][0]
+def find_ref(wildcards):
+    """
+    Within the output of mfasta_split it finds a file name with the "REF_" prefix that was added by the script
+    Will match the pattern "/REF_<anysequence>.fasta"
+    """
+    checkpoint_output = checkpoints.mfasta_split.get().output[0]
+    all_files = expand(OUTPUT_DIR/"individual_seqs/{sequences}.fasta", sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
+    ref = [x for x in all_files if re.search("/REF_.*\.fasta$", x)][0]
+    return ref
+
+
+
 
 rule all:
     input:
-         OUTPUT_DIR/"merged.vcf"
+         OUTPUT_DIR/"masked.fasta"
 
 # Need to add logs/message/conda env
 checkpoint mfasta_split:
@@ -29,12 +41,14 @@ checkpoint mfasta_split:
         directory(OUTPUT_DIR/"individual_seqs")
     params:
         OUTPUT_DIR/"individual_seqs"
+
     script:
         "scripts/split_multifa.py"
 
+
 rule generate_vcf:
     input:
-        referance_dir = get_ref(),
+        referance_dir = find_ref,
         query_dir = OUTPUT_DIR/"individual_seqs/{sequences}.fasta"
     output:
         OUTPUT_DIR/"vcf/{sequences}.vcf"
@@ -48,6 +62,35 @@ rule merge_vcf:
         OUTPUT_DIR/"merged.vcf"
     shell:
         "bcftools concat {input} -o {output}"
+
+rule sort_vcf:
+    input:
+         OUTPUT_DIR/"merged.vcf"
+    output:
+        OUTPUT_DIR/"sorted.vcf"
+    shell:
+        "bcftools sort {input} > {output}"
+
+rule normalise_vcf:
+    input:
+        OUTPUT_DIR/"sorted.vcf"
+    output:
+        OUTPUT_DIR/"norm.vcf"
+    shell:
+        "bcftools norm -m +any {input} > {output}"
+
+rule mask_ref:
+    input:
+        referance_dir = find_ref,
+        norm_vcf =  OUTPUT_DIR/"norm.vcf"
+    output:
+         OUTPUT_DIR/"masked.fasta"
+    shell:
+        "bedtools maskfasta -fi {input.referance_dir} -bed {input.norm_vcf} -fo {output}"
+
+
+
+
 
 
 
