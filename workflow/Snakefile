@@ -5,15 +5,49 @@ configfile: "config/config.yaml"
 OUTPUT_DIR = pathlib.Path(config["output_dir"])
 INPUT_MFASTA = pathlib.Path(config["input"])
 
+def aggregate_input(wildcards):
+    '''
+    aggregate the file names of the random number of files
+    generated at the scatter step
+    '''
+    checkpoint_output = checkpoints.mfasta_split.get(**wildcards).output[0]
+    return expand(OUTPUT_DIR/"vcf/{sequences}.vcf",
+           sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
+
+def get_ref():
+    return [x for x in pathlib.Path(OUTPUT_DIR/"individual_seqs/referance").iterdir()][0]
+
 rule all:
     input:
-         OUTPUT_DIR/"NMasked_genome.fasta"
+         OUTPUT_DIR/"merged.vcf"
 
-rule mfasta_split:
+# Need to add logs/message/conda env
+checkpoint mfasta_split:
     input:
         INPUT_MFASTA
     output:
-        OUTPUT_DIR/
+        directory(OUTPUT_DIR/"individual_seqs")
+    params:
+        OUTPUT_DIR/"individual_seqs"
     script:
         "scripts/split_multifa.py"
+
+rule generate_vcf:
+    input:
+        referance_dir = get_ref(),
+        query_dir = OUTPUT_DIR/"individual_seqs/{sequences}.fasta"
+    output:
+        OUTPUT_DIR/"vcf/{sequences}.vcf"
+    shell:
+        "python ncov-random-scripts/quick_align.py -g {input.query_dir} -r {input.referance_dir} -o vcf > {output}"
+
+rule merge_vcf:
+    input:
+        aggregate_input
+    output:
+        OUTPUT_DIR/"merged.vcf"
+    shell:
+        "bcftools concat {input} -o {output}"
+
+
 
