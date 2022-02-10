@@ -13,7 +13,7 @@ def main(
 
     for pos, genome in enumerate(genome_data):
         if pos == 0:
-            SeqIO.write(genome[1], f"{OUTPUT}/referance/{genome[0]}.fasta", "fasta")
+            SeqIO.write(genome[1], f"{OUTPUT}/REF_{genome[0]}.fasta", "fasta")
         else:
             SeqIO.write(genome[1], f"{OUTPUT}/{genome[0]}.fasta", "fasta")
 

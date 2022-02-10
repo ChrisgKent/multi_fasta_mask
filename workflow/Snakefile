@@ -41,10 +41,8 @@ checkpoint mfasta_split:
         directory(OUTPUT_DIR/"individual_seqs")
     params:
         OUTPUT_DIR/"individual_seqs"
-
     script:
         "scripts/split_multifa.py"
-
 
 rule generate_vcf:
     input:
