@@ -1,0 +1,20 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##contig=<ID=test_1>
+##bcftools_concatVersion=1.13-51-g74c211d+htslib-1.13-41-gab6065c
+##bcftools_concatCommand=concat -o tests/merged.vcf tests/vcf/test_3.vcf tests/vcf/test_5.vcf tests/vcf/REF_test_1.vcf tests/vcf/test_2.vcf tests/vcf/test_4.vcf tests/vcf/test_6.vcf; Date=Thu Feb 10 22:38:25 2022
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample
+test_1	89	.	G	T	.	.	.	GT	1
+test_1	96	.	A	C	.	.	.	GT	1
+test_1	175	.	C	A	.	.	.	GT	1
+test_1	181	.	A	T	.	.	.	GT	1
+test_1	196	.	TAAG	T	.	.	.	GT	1
+test_1	225	.	C	G	.	.	.	GT	1
+test_1	277	.	G	GA	.	.	.	GT	1
+test_1	279	.	G	GA	.	.	.	GT	1
+test_1	299	.	T	TA	.	.	.	GT	1
+test_1	315	.	GTTCT	G	.	.	.	GT	1
+test_1	318	.	C	CA	.	.	.	GT	1
+test_1	328	.	GG	GAA	.	.	.	GT	1
+test_1	398	.	CG	CTTA	.	.	.	GT	1
