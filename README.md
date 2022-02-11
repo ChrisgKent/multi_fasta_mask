@@ -12,6 +12,11 @@ conda env create -f multi_fasta_mask.yaml
 
 conda activate multifa_mask
 ```
+Clone required repo from github
+```
+cd multi_fasta_mask
+git clone https://github.com/ChrisgKent/ncov-random-scripts
+```
 Running multi_fasta_mask
 ```
 snakemake --cores all --config input={input} 
