@@ -8,3 +8,5 @@ dependencies:
  - snakemake-minimal=6.13.*
  - parasail-python=1.2.*
  - pysam=0.18.*
+ - bcftools=1.14
+ - bedtools=2.30.*
