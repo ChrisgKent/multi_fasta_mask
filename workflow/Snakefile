@@ -2,16 +2,22 @@ import pathlib
 import os
 import re
 
+## Todo
+# Add ncov-random-scripts as a submodule 
+# Sanitise 
+
+
 configfile: "config/config.yaml"
 
 OUTPUT_DIR = pathlib.Path(config["output_dir"])
 INPUT_MFASTA = pathlib.Path(config["input"])
+FILTER_EXPRESSION = config["filter_expression"]
 
 def aggregate_input(wildcards):
-    '''
+    """
     aggregate the file names of the random number of files
     generated at the scatter step
-    '''
+    """
     checkpoint_output = checkpoints.mfasta_split.get(**wildcards).output[0]
     return expand(OUTPUT_DIR/"vcf/{sequences}.vcf",
            sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
@@ -61,9 +67,19 @@ rule merge_vcf:
     shell:
         "bcftools concat {input} -o {output}"
 
+rule validate_vcf:
+    input:
+        OUTPUT_DIR/"merged.vcf"
+    params:
+        FILTER_EXPRESSION
+    output:
+        OUTPUT_DIR/"valid.vcf"
+    shell:
+        "bcftools filter -e '{params}' {input} > {output}"
+
 rule sort_vcf:
     input:
-         OUTPUT_DIR/"merged.vcf"
+        OUTPUT_DIR/"valid.vcf"
     output:
         OUTPUT_DIR/"sorted.vcf"
     shell:
