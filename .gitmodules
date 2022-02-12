@@ -1,0 +1,3 @@
+[submodule "ncov-random-scripts"]
+	path = ncov-random-scripts
+	url = https://github.com/ChrisgKent/ncov-random-scripts
