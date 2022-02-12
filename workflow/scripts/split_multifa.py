@@ -1,12 +1,14 @@
 from Bio import SeqIO
 import pathlib
+import uuid
 
 
 def main(
     input_multifa_dir=snakemake.input[0], OUTPUT=snakemake.params[0],
 ):
     genome_data = [
-        (record.id, record) for record in SeqIO.parse(input_multifa_dir, format="fasta")
+        (str(uuid.uuid4()), record)
+        for record in SeqIO.parse(input_multifa_dir, format="fasta")
     ]
     # If there is one or less genomes in fasta, exception is raised
     if len(genome_data) <= 1:
@@ -15,7 +17,9 @@ def main(
         )
 
     # Generates the dir to store the referance
-    pathlib.Path(OUTPUT / "referance").mkdir(parents=True, exist_ok=True)
+    pathlib.Path(OUTPUT).mkdir(parents=True, exist_ok=True)
+
+    # The first sequence gets a "REF_" prefix to the file name
     for pos, genome in enumerate(genome_data):
         if pos == 0:
             SeqIO.write(genome[1], f"{OUTPUT}/REF_{genome[0]}.fasta", "fasta")
