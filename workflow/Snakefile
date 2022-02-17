@@ -13,6 +13,9 @@ OUTPUT_DIR = pathlib.Path(config["output_dir"])
 INPUT_MFASTA = pathlib.Path(config["input"])
 FILTER_EXPRESSION = config["filter_expression"]
 
+# Needs to have validation
+AF_THRESHOLD = config["AF_THRESHOLD"]
+
 def aggregate_input(wildcards):
     """
     aggregate the file names of the random number of files
@@ -31,9 +34,6 @@ def find_ref(wildcards):
     all_files = expand(OUTPUT_DIR/"individual_seqs/{sequences}.fasta", sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
     ref = [x for x in all_files if re.search("/REF_.*\.fasta$", x)][0]
     return ref
-
-
-
 
 rule all:
     input:
@@ -67,19 +67,37 @@ rule merge_vcf:
     shell:
         "bcftools concat {input} -o {output}"
 
-rule validate_vcf:
+rule calc_tags:
     input:
         OUTPUT_DIR/"merged.vcf"
+    output:
+        OUTPUT_DIR/"merged.tags.vcf"
+    shell:
+        "bcftools +fill-tags {input} -- -t AF,NS > {output}"
+
+rule threshold_check:
+    input:
+        OUTPUT_DIR/"merged.tags.vcf"
+    params:
+        AF_THRESHOLD
+    output:
+        OUTPUT_DIR/"merged.tags.pass.vcf"
+    shell:
+        "bcftools filter -i 'INFO/AF[0] > {params}' {input} > {output}"
+
+rule validate_vcf:
+    input:
+        OUTPUT_DIR/"merged.tags.pass.vcf"
     params:
         FILTER_EXPRESSION
     output:
-        OUTPUT_DIR/"valid.vcf"
+        OUTPUT_DIR/"merged.tags.valid.vcf"
     shell:
         "bcftools filter -e '{params}' {input} > {output}"
 
 rule sort_vcf:
     input:
-        OUTPUT_DIR/"valid.vcf"
+        OUTPUT_DIR/"merged.tags.valid.vcf"
     output:
         OUTPUT_DIR/"sorted.vcf"
     shell:
