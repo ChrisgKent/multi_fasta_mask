@@ -8,8 +8,12 @@ OUTPUT_DIR = pathlib.Path(config["output_dir"])
 INPUT_MFASTA = pathlib.Path(config["input"])
 FILTER_EXPRESSION = config["filter_expression"]
 
-# Needs to have validation
 AF_THRESHOLD = config["AF_THRESHOLD"]
+
+if 0 <= AF_THRESHOLD <= 1:
+    pass
+else:
+    raise ValueError("0<=AF_THRESHOLD<=1")
 
 def aggregate_input(wildcards):
     """
