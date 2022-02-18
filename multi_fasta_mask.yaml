@@ -10,3 +10,4 @@ dependencies:
  - pysam=0.18.*
  - bcftools=1.14
  - bedtools=2.30.*
+ - htslib=1.*
