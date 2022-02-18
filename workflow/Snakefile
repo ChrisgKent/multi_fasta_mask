@@ -58,7 +58,7 @@ rule compress_vcf:
     input:
         OUTPUT_DIR/"vcf/{sequences}.vcf"
     output:
-        temp(OUTPUT_DIR/"tmp/vcf_gz/{sequences}.vcf.gz")
+        OUTPUT_DIR/"tmp/vcf_gz/{sequences}.vcf.gz"
     shell:
         "bgzip -c {input} > {output}; tabix -p vcf {output}"
 
@@ -68,7 +68,7 @@ rule filter_vcf:
     params:
         FILTER_EXPRESSION
     output:
-        temp(OUTPUT_DIR/"tmp/vcf_filt/{sequences}.filt.vcf.gz")
+        OUTPUT_DIR/"tmp/vcf_filt/{sequences}.filt.vcf.gz"
     shell:
         "bcftools filter -e '{params}' {input} -O z > {output}; tabix -p vcf {output}"
     
