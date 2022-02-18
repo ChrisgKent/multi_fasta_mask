@@ -2,6 +2,6 @@ output_dir: "results"
 input: ""
 
 ##
-filter_expression: "pos<=0"
+filter_expression: "POS<=0"
 AF_THRESHOLD: 0
 
