@@ -2,11 +2,6 @@ import pathlib
 import os
 import re
 
-## Todo
-# Add ncov-random-scripts as a submodule 
-# Sanitise 
-
-
 configfile: "config/config.yaml"
 
 OUTPUT_DIR = pathlib.Path(config["output_dir"])
@@ -22,7 +17,7 @@ def aggregate_input(wildcards):
     generated at the scatter step
     """
     checkpoint_output = checkpoints.mfasta_split.get(**wildcards).output[0]
-    return expand(OUTPUT_DIR/"vcf/{sequences}.vcf",
+    return expand(OUTPUT_DIR/"tmp/vcf_filt/{sequences}.filt.vcf.gz",
            sequences=glob_wildcards(os.path.join(checkpoint_output, "{sequences}.fasta")).sequences)
 
 def find_ref(wildcards):
@@ -59,62 +54,70 @@ rule generate_vcf:
     shell:
         "python ncov-random-scripts/quick_align.py -g {input.query_dir} -r {input.referance_dir} -o vcf > {output}"
 
+rule compress_vcf:
+    input:
+        OUTPUT_DIR/"vcf/{sequences}.vcf"
+    output:
+        temp(OUTPUT_DIR/"tmp/vcf_gz/{sequences}.vcf.gz")
+    shell:
+        "bgzip -c {input} > {output}; tabix -p vcf {output}"
+
+rule filter_vcf:
+    input:
+        OUTPUT_DIR/"tmp/vcf_gz/{sequences}.vcf.gz"
+    params:
+        FILTER_EXPRESSION
+    output:
+        temp(OUTPUT_DIR/"tmp/vcf_filt/{sequences}.filt.vcf.gz")
+    shell:
+        "bcftools filter -e '{params}' {input} -O z > {output}; tabix -p vcf {output}"
+    
 rule merge_vcf:
     input:
         aggregate_input
     output:
-        OUTPUT_DIR/"merged.vcf"
+        OUTPUT_DIR/"tmp/merged.vcf"
     shell:
-        "bcftools concat {input} -o {output}"
+        "bcftools merge -0 {input} --force-samples > {output}"
 
 rule calc_tags:
     input:
-        OUTPUT_DIR/"merged.vcf"
+        OUTPUT_DIR/"tmp/merged.vcf"
     output:
-        OUTPUT_DIR/"merged.tags.vcf"
+        OUTPUT_DIR/"tmp/merged.tags.vcf"
     shell:
         "bcftools +fill-tags {input} -- -t AF,NS > {output}"
 
 rule threshold_check:
     input:
-        OUTPUT_DIR/"merged.tags.vcf"
+        OUTPUT_DIR/"tmp/merged.tags.vcf"
     params:
         AF_THRESHOLD
     output:
-        OUTPUT_DIR/"merged.tags.pass.vcf"
+        OUTPUT_DIR/"tmp/merged.tags.pass.vcf"
     shell:
         "bcftools filter -i 'INFO/AF[0] > {params}' {input} > {output}"
 
-rule validate_vcf:
-    input:
-        OUTPUT_DIR/"merged.tags.pass.vcf"
-    params:
-        FILTER_EXPRESSION
-    output:
-        OUTPUT_DIR/"merged.tags.valid.vcf"
-    shell:
-        "bcftools filter -e '{params}' {input} > {output}"
-
 rule sort_vcf:
     input:
-        OUTPUT_DIR/"merged.tags.valid.vcf"
+        OUTPUT_DIR/"tmp/merged.tags.pass.vcf"
     output:
-        OUTPUT_DIR/"sorted.vcf"
+        OUTPUT_DIR/"tmp/sorted.vcf"
     shell:
         "bcftools sort {input} > {output}"
 
 rule normalise_vcf:
     input:
-        OUTPUT_DIR/"sorted.vcf"
+        OUTPUT_DIR/"tmp/sorted.vcf"
     output:
-        OUTPUT_DIR/"norm.vcf"
+        OUTPUT_DIR/"tmp/norm.vcf"
     shell:
         "bcftools norm -m +any {input} > {output}"
 
 rule mask_ref:
     input:
         referance_dir = find_ref,
-        norm_vcf =  OUTPUT_DIR/"norm.vcf"
+        norm_vcf =  OUTPUT_DIR/"tmp/norm.vcf"
     output:
          OUTPUT_DIR/"masked.fasta"
     shell:
